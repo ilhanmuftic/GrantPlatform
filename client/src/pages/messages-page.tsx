@@ -19,6 +19,8 @@ import { Send, Search } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
+import Link from 'next/link'; // Import Link component
+
 
 export default function MessagesPage() {
   const { user } = useAuth();
@@ -92,7 +94,7 @@ export default function MessagesPage() {
   };
 
   // Get application by ID
-  const getApplicationById = (appId: number) => {
+  const getApplicationById = (appId: number | null) => { // Added null check
     return applications?.find(a => a.id === appId);
   };
 
@@ -119,14 +121,14 @@ export default function MessagesPage() {
   // Get filtered messages
   const getFilteredMessages = (messages: Message[] | undefined) => {
     if (!messages) return [];
-    
+
     return messages.filter(msg => {
       if (!searchQuery) return true;
-      
+
       const query = searchQuery.toLowerCase();
       const sender = getUserById(msg.senderId);
       const app = getApplicationById(msg.applicationId);
-      
+
       return (
         sender?.fullName.toLowerCase().includes(query) ||
         msg.content.toLowerCase().includes(query) ||
@@ -138,13 +140,13 @@ export default function MessagesPage() {
   // Open conversation
   const openConversation = (applicationId: number) => {
     setActiveConversation(applicationId);
-    
+
     // Mark unread messages as read
     if (messagesData?.received) {
       const unreadMessages = messagesData.received.filter(
         msg => msg.applicationId === applicationId && !msg.read
       );
-      
+
       unreadMessages.forEach(msg => {
         markAsReadMutation.mutate(msg.id);
       });
@@ -170,12 +172,12 @@ export default function MessagesPage() {
   // New conversation
   const startNewConversation = () => {
     if (!selectedApplication) return;
-    
+
     const applicationId = parseInt(selectedApplication);
     if (isNaN(applicationId)) return;
-    
+
     setActiveConversation(applicationId);
-    
+
     // Set default receiver based on application
     const application = getApplicationById(applicationId);
     if (application) {
@@ -196,7 +198,7 @@ export default function MessagesPage() {
   // Get potential applications for conversation
   const getAvailableApplications = () => {
     if (!applications) return [];
-    
+
     if (user?.role === 'applicant') {
       return applications.filter(app => app.applicantId === user.id);
     } else {
@@ -207,10 +209,10 @@ export default function MessagesPage() {
   // Get potential receivers for messages
   const getPotentialReceivers = () => {
     if (!users || !activeConversation) return [];
-    
+
     const application = getApplicationById(activeConversation);
     if (!application) return [];
-    
+
     if (user?.role === 'applicant') {
       return users.filter(u => ['reviewer', 'administrator'].includes(u.role));
     } else {
@@ -263,7 +265,7 @@ export default function MessagesPage() {
                   <TabsTrigger value="inbox">Inbox</TabsTrigger>
                   <TabsTrigger value="sent">Sent</TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="inbox" className="m-0">
                   {isLoading ? (
                     <div className="flex justify-center items-center h-40">
@@ -279,7 +281,7 @@ export default function MessagesPage() {
                       {getFilteredMessages(messagesData?.received).map((message) => {
                         const sender = getUserById(message.senderId);
                         const application = getApplicationById(message.applicationId);
-                        
+
                         return (
                           <li 
                             key={message.id} 
@@ -325,7 +327,7 @@ export default function MessagesPage() {
                     </ul>
                   )}
                 </TabsContent>
-                
+
                 <TabsContent value="sent" className="m-0">
                   {isLoading ? (
                     <div className="flex justify-center items-center h-40">
@@ -341,7 +343,7 @@ export default function MessagesPage() {
                       {getFilteredMessages(messagesData?.sent).map((message) => {
                         const receiver = getUserById(message.receiverId);
                         const application = getApplicationById(message.applicationId);
-                        
+
                         return (
                           <li 
                             key={message.id} 
@@ -446,7 +448,7 @@ export default function MessagesPage() {
                       {conversationMessages.map((message) => {
                         const isOwn = message.senderId === user?.id;
                         const sender = getUserById(message.senderId);
-                        
+
                         return (
                           <div key={message.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
                             <div className={`flex max-w-[80%] ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
