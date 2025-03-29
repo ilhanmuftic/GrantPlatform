@@ -60,9 +60,13 @@ export default function ApplicationTable({ applications, title }: ApplicationTab
               {applications.map((app) => (
                 <tr key={app.id} className="hover:bg-neutral-50">
                   <td className="px-3 py-4 whitespace-nowrap text-sm text-neutral-900 font-medium">
-                    <Link href={`/applications/${app.id}`}>
-                      <a className="hover:text-primary">{app.autoCode}</a>
-                    </Link>
+                    {app.id ? (
+                      <Link href={`/applications/${app.id}`}>
+                        <a className="hover:text-primary">{app.autoCode}</a>
+                      </Link>
+                    ) : (
+                      <span>{app.autoCode}</span>
+                    )}
                   </td>
                   <td className="px-3 py-4 whitespace-nowrap text-sm text-neutral-900">{app.applicantName}</td>
                   <td className="px-3 py-4 whitespace-nowrap text-sm text-neutral-500">{app.programName}</td>
