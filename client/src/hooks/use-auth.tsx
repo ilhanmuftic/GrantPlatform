@@ -74,11 +74,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/register", userData);
       return await res.json();
     },
-    onSuccess: (user: Omit<User, "password">) => {
-      queryClient.setQueryData(["/api/user"], user);
+    onSuccess: (response: any) => {
+      // If it's a verification redirect response (new flow)
+      if (response.redirectUrl) {
+        toast({
+          title: "Verification required",
+          description: response.message || "Please check your email for a verification code",
+          variant: "default",
+        });
+        
+        // Use window.location for hard navigation to preserve query parameters 
+        window.location.href = response.redirectUrl;
+        return;
+      }
+      
+      // Original flow (direct login)
+      queryClient.setQueryData(["/api/user"], response);
       toast({
         title: "Registration successful",
-        description: `Welcome, ${user.fullName}!`,
+        description: `Welcome, ${response.fullName}!`,
         variant: "default",
       });
     },

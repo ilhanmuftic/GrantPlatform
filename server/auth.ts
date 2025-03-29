@@ -118,19 +118,27 @@ export function setupAuth(app: Express) {
         console.log(`Email validation passed for ${req.body.email}`);
       }
 
-      // Create the user with hashed password
-      const user = await storage.createUser({
-        ...req.body,
-        password: await hashPassword(req.body.password),
-      });
-
-      // Remove password from response
-      const { password, ...userWithoutPassword } = user;
-
-      // Log the user in
-      req.login(user, (err) => {
-        if (err) return next(err);
-        res.status(201).json(userWithoutPassword);
+      // For mockup - store in session and redirect to verification instead of creating user
+      // In a real application, we would send a verification email with a code at this point
+      
+      // Store verification data in session if available
+      if (req.session) {
+        req.session.verificationData = {
+          ...req.body,
+          password: await hashPassword(req.body.password),
+          pendingVerification: true
+        };
+        console.log("Stored verification data in session");
+      }
+      
+      // Create a base64 encoded email for URL safety
+      const encodedEmail = Buffer.from(req.body.email).toString('base64');
+      
+      // Return success with redirection information
+      return res.status(200).json({
+        success: true,
+        message: "Verification code sent to email. Please check your inbox.",
+        redirectUrl: `/verification/${encodedEmail}/${req.body.applicantTypeId}`
       });
     } catch (error) {
       next(error);

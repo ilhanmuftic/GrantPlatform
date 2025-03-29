@@ -663,6 +663,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch applicant types" });
     }
   });
+  
+  // Mock verification endpoint
+  app.post("/api/mock-verification", async (req, res) => {
+    try {
+      const { email, applicantTypeId, verificationCode } = req.body;
+      
+      // In a real app, would verify against stored code
+      // For our mockup, just check if it's the test code (123456)
+      if (verificationCode !== "123456") {
+        return res.status(400).json({ 
+          valid: false,
+          message: "Invalid verification code" 
+        });
+      }
+      
+      console.log(`Email verified for ${email} with applicant type: ${applicantTypeId}`);
+      
+      // Get verification data from session
+      const verificationData = req.session?.verificationData;
+      
+      if (!verificationData) {
+        console.log("No verification data in session");
+        // For mock purposes, we'll continue even if no session data
+      } else {
+        console.log("Verification data found in session", verificationData);
+      }
+      
+      // In a real app, we would create the user account here
+      // For the mockup, we'll just return success
+      
+      res.status(200).json({ 
+        valid: true,
+        message: "Email verification successful"
+      });
+    } catch (error) {
+      console.error("Verification error:", error);
+      res.status(500).json({ message: "Server error", error: (error as Error).message });
+    }
+  });
+  
+  // Onboarding profile save endpoint
+  app.post("/api/onboarding/profile", (req, res) => {
+    try {
+      const { applicantTypeId, ...profileData } = req.body;
+      
+      console.log(`Saving profile data for applicant type ${applicantTypeId}:`, profileData);
+      
+      // In a real app, we would save this to the database
+      // For the mockup, just acknowledge receipt
+      
+      res.status(200).json({ 
+        success: true, 
+        message: "Profile data saved successfully"
+      });
+    } catch (error) {
+      console.error("Profile save error:", error);
+      res.status(500).json({ message: "Server error", error: (error as Error).message });
+    }
+  });
+  
+  // Complete onboarding endpoint
+  app.post("/api/onboarding/complete", (req, res) => {
+    try {
+      const { applicantTypeId } = req.body;
+      
+      console.log(`Onboarding completed for applicant type ${applicantTypeId}`);
+      
+      // In a real app, we would update the user's status
+      // For the mockup, just acknowledge
+      
+      res.status(200).json({ 
+        success: true, 
+        message: "Onboarding completed successfully"
+      });
+    } catch (error) {
+      console.error("Onboarding completion error:", error);
+      res.status(500).json({ message: "Server error", error: (error as Error).message });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

@@ -14,12 +14,21 @@ import DocumentsPage from "@/pages/documents-page";
 import ReportsPage from "@/pages/reports-page";
 import AdminPage from "@/pages/admin-page";
 import EvaluationsPage from "@/pages/evaluations-page";
+import VerificationPage from "@/pages/verification-page";
+import OnboardingPage from "@/pages/onboarding-page";
 
 function Router() {
   return (
     <Switch>
       <ProtectedRoute path="/" component={Dashboard} />
       <Route path="/auth" component={AuthPage} />
+      
+      {/* Public verification page - accessible without login */}
+      <Route path="/verification/:encodedEmail/:applicantTypeId" component={VerificationPage} />
+      
+      {/* Onboarding page - accessible without login but requires verification code */}
+      <Route path="/onboarding/:applicantTypeId" component={OnboardingPage} />
+      
       <ProtectedRoute path="/applications" component={ApplicationsPage} />
       <ProtectedRoute 
         path="/evaluations" 
