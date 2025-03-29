@@ -1,0 +1,134 @@
+. Modules by Functional Areas
+A. Module: Authentication & User Roles
+
+    Login/Logout using JWT
+
+    Support for LDAP and/or database users
+
+    Role management: Administrator, Applicant, Reviewer, Sponsor/Donor
+
+    Logging user login and activity history
+
+B. Module: Application Management
+
+    Dynamic forms based on sponsor/donor program requirements
+
+    Listing and detailed view of active sponsorship/donation calls
+
+    Submission with validation, dropdown fields, and file attachments
+
+    Application lock after final submission (no changes allowed)
+
+    Automatic application ID generation (format: XXXX/MM/YYYY)
+
+    Additional document upload & versioning after submission
+
+C. Module: Tracking & Communication
+
+    Inbox and communication history with assigned reviewer
+
+    Internal messaging and file exchange between applicant and reviewer
+
+    Commenting system per application
+
+    Email notifications for status updates and communication
+
+D. Module: Application Evaluation
+
+    AI-powered evaluation based on sponsor/donor criteria
+
+    Manual reviewer override or support for AI score
+
+    Evaluation history per application
+
+    Option to reassign application to a different program with notification to applicant
+
+    Request for missing or additional information from the applicant
+
+E. Module: Decision-Making Hierarchy
+
+    Multi-level approval workflow for each application
+
+    Each decision recorded with user identity and timestamp
+
+    Option to return application for revision at any step
+
+    Budget amount adjustments with justification
+
+    Forwarding to higher authority for final decision
+
+F. Module: Budget Management
+
+    Configure budget limits per program
+
+    Real-time overview: reserved, contracted, spent, and available funds
+
+    Aggregated analytics by organization type, program, and funding size
+
+    Visual reports using tables and charts
+
+G. Module: Contracts & Project Realization
+
+    Auto-generation of contracts and rejection notices using templates
+
+    Upload of project completion proof (PDF, Word, images, etc.)
+
+    Validation of deliverables (semi-automated with AI + manual review)
+
+    Generation of completion reports or obligation confirmation forms
+
+    Tracking of contract obligation status:
+
+        Completed
+
+        In Progress
+
+        Not Completed (with reasons)
+
+H. Module: Reporting
+
+Reports are role-based and support advanced filtering.
+
+    Application status report
+
+    Budget usage report
+
+    Sponsorship/donation performance report
+
+    Communication history report
+
+    Change log report
+
+    AI vs. manual evaluation comparison
+
+    Obligation completion report
+
+    Rejected applications summary (with reasons)
+
+    Program-wide impact report
+
+I. Module: System Administration
+
+    Manage users and role permissions
+
+    Manage sponsorship/donation programs
+
+    Configure evaluation criteria per sponsor/donor
+
+    Manage document templates (contracts, rejections, etc.)
+
+    Database backup, activity logging, and system monitoring
+
+🤖 AI Evaluation – Dedicated Microservice
+
+    Independent service (e.g., ai_evaluator_service) that:
+
+        Receives the application data
+
+        Applies sponsor/donor-defined evaluation criteria
+
+        Scores the application
+
+        Returns a recommendation (approve, reject, needs revision)
+
+Note: The model is trained on past application data and supports customizable criteria for different organizations.
