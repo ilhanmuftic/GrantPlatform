@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -17,6 +17,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { Check, Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ApplicantType } from "@shared/schema";
 
 const loginSchema = z.object({
   username: z.string().min(1, { message: "Username is required" }),
@@ -30,11 +32,19 @@ const registerSchema = z.object({
   role: z.enum(["applicant", "donor", "administrator", "reviewer"], {
     message: "Please select a valid role",
   }),
+  applicantTypeId: z.number().optional(),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
   confirmPassword: z.string(),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
+})
+.refine(data => {
+  // If role is applicant, applicantTypeId is required
+  return data.role !== "applicant" || (data.role === "applicant" && data.applicantTypeId !== undefined);
+}, {
+  message: "Applicant type is required for applicants",
+  path: ["applicantTypeId"],
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -43,6 +53,13 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export default function AuthPage() {
   const [, navigate] = useLocation();
   const { user, loginMutation, registerMutation } = useAuth();
+  const [selectedRole, setSelectedRole] = useState("applicant");
+  
+  // Fetch applicant types for the dropdown
+  const { data: applicantTypes, isLoading: isLoadingApplicantTypes } = useQuery<ApplicantType[]>({
+    queryKey: ["/api/applicant-types"],
+    enabled: true,
+  });
   
   // Redirect to dashboard if already authenticated
   useEffect(() => {
@@ -70,6 +87,19 @@ export default function AuthPage() {
       confirmPassword: "",
     },
   });
+
+  // Update the form when role changes
+  useEffect(() => {
+    const currentRole = registerForm.getValues("role");
+    if (currentRole !== selectedRole) {
+      setSelectedRole(currentRole);
+      
+      // Reset applicantTypeId when switching roles
+      if (currentRole !== "applicant") {
+        registerForm.setValue("applicantTypeId", undefined);
+      }
+    }
+  }, [registerForm, selectedRole]);
 
   function onLoginSubmit(values: LoginFormValues) {
     loginMutation.mutate(values);
@@ -211,6 +241,10 @@ export default function AuthPage() {
                           <select
                             className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                             {...field}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              setSelectedRole(e.target.value);
+                            }}
                           >
                             <option value="applicant">Applicant</option>
                             <option value="donor">Donor</option>
@@ -221,6 +255,35 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
+                    
+                    {selectedRole === "applicant" && (
+                      <FormField
+                        control={registerForm.control}
+                        name="applicantTypeId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Applicant Type</FormLabel>
+                            <select
+                              className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                              disabled={isLoadingApplicantTypes}
+                              value={field.value?.toString() || ""}
+                              onChange={(e) => field.onChange(parseInt(e.target.value))}
+                            >
+                              <option value="" disabled>
+                                {isLoadingApplicantTypes ? "Loading applicant types..." : "Select applicant type"}
+                              </option>
+                              {applicantTypes?.map((type) => (
+                                <option key={type.id} value={type.id}>
+                                  {type.name} - {type.description}
+                                </option>
+                              ))}
+                            </select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                    
                     <FormField
                       control={registerForm.control}
                       name="password"

@@ -653,6 +653,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch budget data" });
     }
   });
+  
+  // Applicant types routes
+  app.get("/api/applicant-types", async (req, res) => {
+    try {
+      const applicantTypes = await storage.getApplicantTypes();
+      res.json(applicantTypes);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch applicant types" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
