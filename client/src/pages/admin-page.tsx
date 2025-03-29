@@ -13,16 +13,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { User, Program } from "@shared/schema";
+import { User, Program, InsertUser } from "@shared/schema";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { 
   Form, 
   FormControl, 
+  FormDescription,
   FormField, 
   FormItem, 
   FormLabel, 
@@ -56,7 +57,19 @@ const programSchema = z.object({
   active: z.boolean().default(true),
 });
 
+// User form schema
+const userSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  fullName: z.string().min(2, "Full name is required"),
+  email: z.string().email("Invalid email format"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  role: z.enum(["administrator", "applicant", "reviewer", "donor"], {
+    message: "Please select a valid role",
+  }),
+});
+
 type ProgramFormValues = z.infer<typeof programSchema>;
+type UserFormValues = z.infer<typeof userSchema>;
 
 export default function AdminPage() {
   const { toast } = useToast();
@@ -69,6 +82,18 @@ export default function AdminPage() {
   const [selectedProgramId, setSelectedProgramId] = useState<number | null>(null);
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [programSearchQuery, setProgramSearchQuery] = useState("");
+  
+  // User form
+  const userForm = useForm<UserFormValues>({
+    resolver: zodResolver(userSchema),
+    defaultValues: {
+      username: "",
+      fullName: "",
+      email: "",
+      password: "",
+      role: "applicant",
+    },
+  });
 
   // Fetch users
   const { data: users, isLoading: usersLoading } = useQuery<User[]>({
@@ -92,6 +117,41 @@ export default function AdminPage() {
       active: true,
     },
   });
+  
+  // Create user mutation
+  const createUserMutation = useMutation({
+    mutationFn: async (values: UserFormValues) => {
+      return apiRequest("POST", "/api/users", values);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "User created",
+        description: "The user has been created successfully",
+        variant: "default",
+      });
+      setShowUserDialog(false);
+      userForm.reset({
+        username: "",
+        fullName: "",
+        email: "",
+        password: "",
+        role: "applicant",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error creating user",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Handle user form submission
+  const onUserSubmit = (values: UserFormValues) => {
+    createUserMutation.mutate(values);
+  };
 
   // Create program mutation
   const createProgramMutation = useMutation({
@@ -789,6 +849,327 @@ export default function AdminPage() {
           </DialogContent>
         </Dialog>
       </div>
+      
+      {/* Add User Dialog */}
+      <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New User</DialogTitle>
+            <DialogDescription>
+              Create a new user account with specific role and permissions.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...userForm}>
+            <form onSubmit={userForm.handleSubmit(onUserSubmit)} className="space-y-4 py-2">
+              <FormField
+                control={userForm.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input placeholder="username123" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={userForm.control}
+                name="fullName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={userForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="user@example.com" type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={userForm.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input placeholder="••••••" type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={userForm.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="administrator">Administrator</SelectItem>
+                        <SelectItem value="applicant">Applicant</SelectItem>
+                        <SelectItem value="reviewer">Reviewer</SelectItem>
+                        <SelectItem value="donor">Donor</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter className="pt-4">
+                <Button 
+                  variant="outline" 
+                  type="button"
+                  onClick={() => setShowUserDialog(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit"
+                  disabled={createUserMutation.isPending}
+                >
+                  {createUserMutation.isPending ? (
+                    <>
+                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                      Creating...
+                    </>
+                  ) : (
+                    "Create User"
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Program Dialog */}
+      <Dialog open={showProgramDialog} onOpenChange={setShowProgramDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{selectedProgramId ? "Edit Program" : "Add New Program"}</DialogTitle>
+            <DialogDescription>
+              {selectedProgramId 
+                ? "Update the program details below." 
+                : "Create a new program with the form below."}
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...programForm}>
+            <form onSubmit={programForm.handleSubmit(onProgramSubmit)} className="space-y-4 py-2">
+              <FormField
+                control={programForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Program Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Corporate Sponsorship Program" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={programForm.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Type</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a program type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="sponzorstvo">Sponsorship</SelectItem>
+                        <SelectItem value="donacija">Donation</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={programForm.control}
+                  name="budgetTotal"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Budget Total</FormLabel>
+                      <FormControl>
+                        <Input placeholder="10000" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={programForm.control}
+                  name="year"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Year</FormLabel>
+                      <FormControl>
+                        <Input placeholder="2025" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={programForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Program description..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={programForm.control}
+                name="active"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Active</FormLabel>
+                      <FormDescription>
+                        Program is active and available for applications
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <DialogFooter className="pt-4">
+                <Button 
+                  variant="outline" 
+                  type="button"
+                  onClick={() => setShowProgramDialog(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit"
+                  disabled={createProgramMutation.isPending || updateProgramMutation.isPending}
+                >
+                  {createProgramMutation.isPending || updateProgramMutation.isPending ? (
+                    <>
+                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                      {selectedProgramId ? "Updating..." : "Creating..."}
+                    </>
+                  ) : (
+                    selectedProgramId ? "Update Program" : "Create Program"
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete User Confirmation Dialog */}
+      <Dialog open={showDeleteUserDialog} onOpenChange={setShowDeleteUserDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete User</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this user? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowDeleteUserDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={() => {
+                // Implement delete user logic here
+                setShowDeleteUserDialog(false);
+              }}
+            >
+              Delete
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Program Confirmation Dialog */}
+      <Dialog open={showDeleteProgramDialog} onOpenChange={setShowDeleteProgramDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Program</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this program? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowDeleteProgramDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={() => {
+                if (selectedProgramId) {
+                  deleteProgramMutation.mutate(selectedProgramId);
+                }
+              }}
+              disabled={deleteProgramMutation.isPending}
+            >
+              {deleteProgramMutation.isPending ? (
+                <>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
