@@ -147,6 +147,13 @@ export class MemStorage implements IStorage {
         role: "donator",
         password: hashedPassword,
       },
+      {
+        username: "reviewer1",
+        fullName: "Review Manager",
+        email: "reviewer@donacije.ba",
+        role: "reviewer",
+        password: hashedPassword,
+      },
     ] as InsertUser[];
 
     for (const user of users) {
