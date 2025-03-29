@@ -152,18 +152,18 @@ export default function MessagesPage() {
 
     // Set default receiver based on application
     const application = getApplicationById(applicationId);
-    if (application) {
-      // If current user is applicant, set receiver to a reviewer
-      if (user?.role === 'applicant') {
-        const reviewer = users?.find(u => u.role === 'reviewer');
-        if (reviewer) {
-          setSelectedReceiver(reviewer.id.toString());
-        }
-      } 
-      // If current user is reviewer or admin, set receiver to applicant
-      else if (['reviewer', 'administrator'].includes(user?.role || '')) {
-        setSelectedReceiver(application.applicantId.toString());
+    if (!application) return;
+
+    // If current user is applicant, set receiver to a reviewer
+    if (user?.role === 'applicant') {
+      const reviewer = users?.find(u => u.role === 'reviewer');
+      if (reviewer) {
+        setSelectedReceiver(reviewer.id.toString());
       }
+    } 
+    // If current user is reviewer or admin, set receiver to applicant
+    else if (['reviewer', 'administrator'].includes(user?.role || '')) {
+      setSelectedReceiver(application.applicantId.toString());
     }
   };
 
@@ -172,6 +172,8 @@ export default function MessagesPage() {
     if (!selectedApplication) return;
     
     const applicationId = parseInt(selectedApplication);
+    if (isNaN(applicationId)) return;
+    
     setActiveConversation(applicationId);
     
     // Set default receiver based on application
