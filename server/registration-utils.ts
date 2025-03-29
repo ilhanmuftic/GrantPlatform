@@ -200,36 +200,50 @@ export function validateEmailForApplicantType(email: string, applicantType: stri
     return { valid: false, message: "Invalid email format" };
   }
   
+  // Normalize the applicant type to lowercase to match our constants
+  const normalizedType = applicantType.toLowerCase();
+  console.log(`Validating email ${email} for applicant type ${applicantType} (normalized: ${normalizedType})`);
+  
+  // Map from database name to constant name if needed
+  let validationType = normalizedType;
+  if (normalizedType === "organization" || applicantType === "ORGANIZATION") {
+    validationType = APPLICANT_TYPE.ORGANIZATION;
+  } else if (normalizedType === "individual" || applicantType === "INDIVIDUAL") {
+    validationType = APPLICANT_TYPE.INDIVIDUAL;
+  } else if (normalizedType === "corporation" || applicantType === "CORPORATION") {
+    validationType = APPLICANT_TYPE.CORPORATION;
+  }
+  
   // Get validation rules for this applicant type
-  const validationRules = EMAIL_VALIDATION[applicantType as keyof typeof EMAIL_VALIDATION];
+  const validationRules = EMAIL_VALIDATION[validationType as keyof typeof EMAIL_VALIDATION];
   if (!validationRules) {
+    console.log(`No validation rules found for type: ${validationType}`);
     return { valid: true }; // No specific rules
   }
   
   // Individual applicants can use any email
-  if (applicantType === APPLICANT_TYPE.INDIVIDUAL) {
+  if (validationType === APPLICANT_TYPE.INDIVIDUAL) {
     return { valid: true };
   }
   
   // Check against disallowed domains (both for org and corp)
   if (validationRules.disallowed_domains && 
       validationRules.disallowed_domains.includes(domain)) {
-    return { 
-      valid: false, 
-      message: `${applicantType === APPLICANT_TYPE.ORGANIZATION ? 'Organizations' : 'Corporations'} cannot use personal email domains like gmail.com, yahoo.com, etc.` 
-    };
+    const message = `${validationType === APPLICANT_TYPE.ORGANIZATION ? 'Organizations' : 'Corporations'} cannot use personal email domains like gmail.com, yahoo.com, etc.`;
+    console.log(`Email validation failed: ${message}`);
+    return { valid: false, message };
   }
   
   // Additional checks for organizations - must end with .org, .ngo, etc.
-  if (applicantType === APPLICANT_TYPE.ORGANIZATION && 
+  if (validationType === APPLICANT_TYPE.ORGANIZATION && 
       validationRules.pattern && 
       !validationRules.pattern.test(domain)) {
-    return { 
-      valid: false, 
-      message: "Organizations should use official domain names ending with .org, .ngo, .ba, .net, or .com" 
-    };
+    const message = "Organizations should use official domain names ending with .org, .ngo, .ba, .net, or .com";
+    console.log(`Email validation failed: ${message}`);
+    return { valid: false, message };
   }
   
+  console.log(`Email validation successful for ${email} with type ${validationType}`);
   return { valid: true };
 }
 

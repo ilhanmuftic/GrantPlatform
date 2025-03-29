@@ -83,17 +83,18 @@ export const EMAIL_VALIDATION = {
   [APPLICANT_TYPE.INDIVIDUAL]: {
     // Can use any email
     pattern: null,
-    allowed_domains: null
+    allowed_domains: null,
+    disallowed_domains: null
   },
   [APPLICANT_TYPE.ORGANIZATION]: {
     // Must use .org, .ngo, .ba, etc. and not personal domains
     pattern: /\.(org|ngo|ba|net|com)$/,
-    disallowed_domains: ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com"]
+    disallowed_domains: ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "gmail.ba", "yahoo.ba"]
   },
   [APPLICANT_TYPE.CORPORATION]: {
     // Must have business domain (not personal email)
     pattern: null,
-    disallowed_domains: ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com"]
+    disallowed_domains: ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "gmail.ba", "yahoo.ba"]
   }
 };
 

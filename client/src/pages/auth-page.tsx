@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, Building2, User, BuildingIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ApplicantType } from "@shared/schema";
 
@@ -33,6 +33,8 @@ const registerSchema = z.object({
     message: "Please select a valid role",
   }),
   applicantTypeId: z.number().optional(),
+  representativeEmail: z.string().email({ message: "Invalid representative email address" }).optional(),
+  website: z.string().url({ message: "Invalid website URL" }).optional(),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
   confirmPassword: z.string(),
 }).refine(data => data.password === data.confirmPassword, {
@@ -45,6 +47,20 @@ const registerSchema = z.object({
 }, {
   message: "Applicant type is required for applicants",
   path: ["applicantTypeId"],
+})
+.refine(data => {
+  // If applicant type is ORGANIZATION (ID: 1), representative email is required
+  return data.applicantTypeId !== 1 || (data.applicantTypeId === 1 && data.representativeEmail);
+}, {
+  message: "Representative email is required for organizations",
+  path: ["representativeEmail"],
+})
+.refine(data => {
+  // If applicant type is CORPORATION (ID: 3), website is required
+  return data.applicantTypeId !== 3 || (data.applicantTypeId === 3 && data.website);
+}, {
+  message: "Corporate website is required for corporations",
+  path: ["website"],
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -84,6 +100,8 @@ export default function AuthPage() {
       fullName: "",
       email: "",
       role: "applicant",
+      representativeEmail: "",
+      website: "",
       password: "",
       confirmPassword: "",
     },
@@ -244,8 +262,13 @@ export default function AuthPage() {
                       control={registerForm.control}
                       name="applicantTypeId"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Applicant Type</FormLabel>
+                        <FormItem className="mb-6">
+                          <FormLabel>
+                            <div className="flex items-center space-x-2">
+                              <span>Applicant Type</span>
+                              <span className="text-destructive">*</span>
+                            </div>
+                          </FormLabel>
                           <select
                             className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                             disabled={isLoadingApplicantTypes}
@@ -265,6 +288,72 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
+                    
+                    {/* Show representative email field for organizations */}
+                    {applicantTypeId === 1 && (
+                      <FormField
+                        control={registerForm.control}
+                        name="representativeEmail"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              <div className="flex items-center space-x-2">
+                                <div className="flex items-center">
+                                  <Building2 className="h-4 w-4 mr-1" />
+                                  <span>Representative Email Address</span>
+                                </div>
+                                <span className="text-destructive">*</span>
+                              </div>
+                            </FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="email" 
+                                placeholder="representative@organization.org" 
+                                {...field} 
+                                value={field.value || ""}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Please provide an email for the organization's representative or contact person
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                    
+                    {/* Show website field for corporations */}
+                    {applicantTypeId === 3 && (
+                      <FormField
+                        control={registerForm.control}
+                        name="website"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              <div className="flex items-center space-x-2">
+                                <div className="flex items-center">
+                                  <BuildingIcon className="h-4 w-4 mr-1" />
+                                  <span>Corporate Website</span>
+                                </div>
+                                <span className="text-destructive">*</span>
+                              </div>
+                            </FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="url" 
+                                placeholder="https://www.corporation.com" 
+                                {...field} 
+                                value={field.value || ""}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Please provide your official corporate website URL
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                    )}
                     
                     <FormField
                       control={registerForm.control}

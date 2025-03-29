@@ -96,8 +96,11 @@ export function setupAuth(app: Express) {
         // Get the applicant type name
         const applicantType = await storage.getApplicantType(req.body.applicantTypeId);
         if (!applicantType) {
+          console.error(`Invalid applicant type ID: ${req.body.applicantTypeId}`);
           return res.status(400).json({ message: "Invalid applicant type" });
         }
+        
+        console.log(`Processing registration for ${req.body.email} with applicant type: ${applicantType.name} (ID: ${applicantType.id})`);
         
         // Validate email for this applicant type
         const emailValidation = validateEmailForApplicantType(
@@ -106,10 +109,13 @@ export function setupAuth(app: Express) {
         );
         
         if (!emailValidation.valid) {
+          console.log(`Registration rejected due to email validation: ${emailValidation.message}`);
           return res.status(400).json({ 
             message: emailValidation.message || "Email is not valid for this applicant type"
           });
         }
+        
+        console.log(`Email validation passed for ${req.body.email}`);
       }
 
       // Create the user with hashed password
@@ -159,5 +165,42 @@ export function setupAuth(app: Express) {
     // Remove password from response
     const { password, ...userWithoutPassword } = req.user as User;
     res.json(userWithoutPassword);
+  });
+  
+  // Test route for email validation without user creation
+  app.post("/api/validate-email", async (req, res) => {
+    try {
+      const { email, applicantTypeId } = req.body;
+      
+      if (!email || !applicantTypeId) {
+        return res.status(400).json({
+          valid: false,
+          message: "Both email and applicantTypeId are required"
+        });
+      }
+      
+      // Get applicant type
+      const applicantType = await storage.getApplicantType(applicantTypeId);
+      if (!applicantType) {
+        return res.status(400).json({
+          valid: false,
+          message: "Invalid applicant type ID"
+        });
+      }
+      
+      console.log(`Testing validation for ${email} with applicant type: ${applicantType.name}`);
+      
+      // Validate email for this applicant type
+      const result = validateEmailForApplicantType(email, applicantType.name);
+      
+      // Return validation result
+      return res.status(result.valid ? 200 : 400).json(result);
+    } catch (error) {
+      console.error("Email validation error:", error);
+      return res.status(500).json({
+        valid: false,
+        message: "Error validating email"
+      });
+    }
   });
 }
