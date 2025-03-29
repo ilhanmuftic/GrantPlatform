@@ -96,7 +96,17 @@ export default function MessagesPage() {
   // Get application by ID
   const getApplicationById = (appId: number | null) => {
     if (!appId || !applications) return null;
-    return applications.find(a => a.id === appId);
+    const app = applications.find(a => a.id === appId);
+    
+    // If we found the application but it's missing summary, add one
+    if (app && !app.summary) {
+      return {
+        ...app,
+        summary: `Application ${app.autoCode || app.id}`,
+      };
+    }
+    
+    return app;
   };
 
   // Get user initials
