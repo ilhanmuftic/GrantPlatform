@@ -36,7 +36,9 @@ export default function MessageList({ messages = [] }: MessageListProps) {
                     {message.content}
                   </div>
                   <p className="text-xs text-neutral-500">
-                    {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}
+                    {message.createdAt 
+                      ? formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })
+                      : 'Unknown date'}
                   </p>
                 </Link>
               </div>
