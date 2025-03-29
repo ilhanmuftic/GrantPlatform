@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth } from "./auth";
+import { setupAuth, hashPassword } from "./auth";
 import { z } from "zod";
 import { 
   insertUserSchema,
@@ -52,8 +52,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email already exists" });
       }
       
+      // Validate data and hash the password
       const validatedData = insertUserSchema.parse(req.body);
-      const user = await storage.createUser(validatedData);
+      const hashedPassword = await hashPassword(validatedData.password);
+      
+      // Create user with hashed password
+      const user = await storage.createUser({
+        ...validatedData,
+        password: hashedPassword
+      });
       
       // Remove password from the response
       const { password, ...userWithoutPassword } = user;
@@ -62,6 +69,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid user data", errors: error.errors });
       }
+      console.error("User creation error:", error);
       res.status(500).json({ message: "Failed to create user" });
     }
   });

@@ -15,13 +15,21 @@ declare global {
 
 const scryptAsync = promisify(scrypt);
 
-async function hashPassword(password: string) {
+export async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
   return `${buf.toString("hex")}.${salt}`;
 }
 
-async function comparePasswords(supplied: string, stored: string) {
+export async function comparePasswords(supplied: string, stored: string) {
+  // Check if the stored password contains a salt (has a period)
+  if (!stored || !stored.includes('.')) {
+    // For backward compatibility (old passwords may not be hashed properly)
+    // Handle this case by checking if passwords match directly (not recommended for security)
+    console.warn("Password without proper hash format detected");
+    return false;
+  }
+  
   const [hashed, salt] = stored.split(".");
   const hashedBuf = Buffer.from(hashed, "hex");
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
