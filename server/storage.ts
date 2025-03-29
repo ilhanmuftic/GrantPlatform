@@ -4,8 +4,11 @@ import { users, User, InsertUser, programs, Program, InsertProgram,
   budgetTracking, BudgetTracking, InsertBudgetTracking } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { promisify } from "util";
 
 const MemoryStore = createMemoryStore(session);
+const scryptAsync = promisify(scrypt);
 
 // modify the interface with any CRUD methods
 // you might need
@@ -56,7 +59,7 @@ export interface IStorage {
   updateBudgetTracking(id: number, budgetTracking: Partial<BudgetTracking>): Promise<BudgetTracking | undefined>;
 
   // Session storage
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
 }
 
 export class MemStorage implements IStorage {
@@ -76,7 +79,13 @@ export class MemStorage implements IStorage {
   currentMessageId: number;
   currentBudgetTrackingId: number;
   
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
+
+  private async hashPasswordForSeed(password: string): Promise<string> {
+    const salt = randomBytes(16).toString("hex");
+    const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+    return `${buf.toString("hex")}.${salt}`;
+  }
 
   constructor() {
     this.users = new Map();
@@ -103,14 +112,17 @@ export class MemStorage implements IStorage {
     this.seedInitialData();
   }
 
-  private seedInitialData() {
+  private async seedInitialData() {
+    // Create a hashed password for all seed users
+    const hashedPassword = await this.hashPasswordForSeed("password");
+    
     // Seed users
     const users = [
       {
         username: "admin1",
         fullName: "Admin Adminić",
         email: "admin@donacije.ba",
-        password: "password",
+        password: hashedPassword,
         role: "administrator",
       },
       {
@@ -118,25 +130,27 @@ export class MemStorage implements IStorage {
         fullName: "Nina Kultura",
         email: "nina@kultura.org",
         role: "applicant",
-        password: "password",
+        password: hashedPassword,
       },
       {
         username: "ref_human",
         fullName: "Refik Humanović",
         email: "refik@donacije.ba",
-        role: "reviewer",
-        password: "password",
+        role: "referent",
+        password: hashedPassword,
       },
       {
         username: "don_corp",
         fullName: "Don Korporativni",
         email: "don@corporate.com",
-        role: "donor",
-        password: "password",
+        role: "donator",
+        password: hashedPassword,
       },
     ] as InsertUser[];
 
-    users.forEach(user => this.createUser(user));
+    for (const user of users) {
+      await this.createUser(user);
+    }
 
     // Seed programs
     const programs = [

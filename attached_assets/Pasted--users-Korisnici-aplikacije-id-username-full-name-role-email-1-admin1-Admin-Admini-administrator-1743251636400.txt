@@ -1,0 +1,51 @@
+. users – Korisnici aplikacije
+id	username	full_name	role	email
+1	admin1	Admin Adminić	administrator	admin@donacije.ba
+2	nina_kultura	Nina Kultura	aplikant	nina@kultura.org
+3	ref_human	Refik Humanović	referent	refik@donacije.ba
+4	don_corp	Don Korporativni	donator	don@corporate.com
+
+Opis: Sadrži sve korisnike sistema s pripadajućim ulogama. Svaki korisnik ima jedinstven ID, ulogu i email.
+📋 2. programs – Aktivni programi sponzorstava i donacija
+id	name	type	budget_total	year
+1	Korporativno sponzorstvo	sponzorstvo	100000	2025
+2	Lokalno sponzorstvo	sponzorstvo	50000	2025
+3	Humanitarne donacije	donacija	75000	2025
+
+Opis: Definiše dostupne programe po tipu i budžetu za određenu godinu.
+📝 3. applications – Prijave za sponzorstva/donacije
+id	applicant_id	program_id	status	submitted_at	auto_code	summary
+1	2	3	u obradi	2025-03-25 13:20:00	0001/03/2025	Donacija za dječije pozorište
+2	2	1	odbijeno	2025-03-20 10:10:00	0002/03/2025	Sponzorstvo za koncert “Zvuk Mira”
+
+Opis: Svaka prijava vezana je za aplikanta i program. Ima status i automatski generisanu šifru.
+📊 4. evaluations – Evaluacija prijava
+id	application_id	evaluated_by	score	decision	comment
+1	1	3	85	preporučeno	Kompletna dokumentacija, pozitivan utisak
+2	2	3	45	odbijeno	Nedostaje detaljan finansijski plan
+
+Opis: Rezultati ocjenjivanja aplikacija, ocjena i komentar referenta. Može biti AI + ljudska kombinacija.
+📎 5. documents – Priloženi dokumenti uz prijavu
+id	application_id	file_name	file_type	uploaded_at
+1	1	budzet_2025.pdf	pdf	2025-03-25 13:22:00
+2	1	plan_aktivnosti.docx	docx	2025-03-25 13:23:00
+3	2	sponzorski_ugovor.pdf	pdf	2025-03-20 10:12:00
+
+Opis: Dokumenti koje aplikanti prilažu – budžeti, planovi, ugovori, dokazne priloge.
+💰 6. budget_tracking – Stanje budžeta po programu
+id	program_id	reserved	approved	spent	available
+1	1	10000	5000	4500	85000
+2	3	20000	12000	8000	47000
+
+Opis: Budžetska evidencija – koliko sredstava je rezervisano, odobreno, utrošeno i još dostupno.
+📌 Sažetak odnosa među tabelama:
+
+    users (aplikanti, referenti, donatori) kreiraju i obrađuju applications
+
+    applications su dio određenog programs programa
+
+    documents su vezani za applications
+
+    evaluations se odnose na applications i rade ih referenti
+
+    budget_tracking pokazuje finansijsko stanje svakog programs unosa
