@@ -1,4 +1,7 @@
 import { users, User, InsertUser, programs, Program, InsertProgram, 
+  applicantTypes, ApplicantType, InsertApplicantType,
+  registrationProcesses, RegistrationProcess, InsertRegistrationProcess,
+  verificationDocuments, VerificationDocument, InsertVerificationDocument,
   applications, Application, InsertApplication, documents, Document, InsertDocument,
   evaluations, Evaluation, InsertEvaluation, messages, Message, InsertMessage,
   budgetTracking, BudgetTracking, InsertBudgetTracking } from "@shared/schema";
@@ -26,6 +29,26 @@ export interface IStorage {
   getPrograms(): Promise<Program[]>;
   createProgram(program: InsertProgram): Promise<Program>;
   updateProgram(id: number, program: Partial<Program>): Promise<Program | undefined>;
+
+  // Applicant Type methods
+  getApplicantType(id: number): Promise<ApplicantType | undefined>;
+  getApplicantTypes(): Promise<ApplicantType[]>;
+  createApplicantType(applicantType: InsertApplicantType): Promise<ApplicantType>;
+  updateApplicantType(id: number, applicantType: Partial<ApplicantType>): Promise<ApplicantType | undefined>;
+
+  // Registration Process methods
+  getRegistrationProcess(id: number): Promise<RegistrationProcess | undefined>;
+  getRegistrationProcessByUser(userId: number): Promise<RegistrationProcess | undefined>;
+  getRegistrationProcesses(): Promise<RegistrationProcess[]>;
+  createRegistrationProcess(registrationProcess: InsertRegistrationProcess): Promise<RegistrationProcess>;
+  updateRegistrationProcess(id: number, registrationProcess: Partial<RegistrationProcess>): Promise<RegistrationProcess | undefined>;
+
+  // Verification Document methods
+  getVerificationDocument(id: number): Promise<VerificationDocument | undefined>;
+  getVerificationDocumentsByUser(userId: number): Promise<VerificationDocument[]>;
+  getVerificationDocumentsByRegistrationProcess(registrationProcessId: number): Promise<VerificationDocument[]>;
+  createVerificationDocument(document: InsertVerificationDocument): Promise<VerificationDocument>;
+  updateVerificationDocument(id: number, document: Partial<VerificationDocument>): Promise<VerificationDocument | undefined>;
 
   // Application methods
   getApplication(id: number): Promise<Application | undefined>;
@@ -66,6 +89,9 @@ export interface IStorage {
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private programs: Map<number, Program>;
+  private applicantTypes: Map<number, ApplicantType>;
+  private registrationProcesses: Map<number, RegistrationProcess>;
+  private verificationDocuments: Map<number, VerificationDocument>;
   private applications: Map<number, Application>;
   private documents: Map<number, Document>;
   private evaluations: Map<number, Evaluation>;
@@ -74,6 +100,9 @@ export class MemStorage implements IStorage {
   
   currentUserId: number;
   currentProgramId: number;
+  currentApplicantTypeId: number;
+  currentRegistrationProcessId: number;
+  currentVerificationDocumentId: number;
   currentApplicationId: number;
   currentDocumentId: number;
   currentEvaluationId: number;
@@ -91,6 +120,9 @@ export class MemStorage implements IStorage {
   constructor() {
     this.users = new Map();
     this.programs = new Map();
+    this.applicantTypes = new Map();
+    this.registrationProcesses = new Map();
+    this.verificationDocuments = new Map();
     this.applications = new Map();
     this.documents = new Map();
     this.evaluations = new Map();
@@ -99,6 +131,9 @@ export class MemStorage implements IStorage {
     
     this.currentUserId = 1;
     this.currentProgramId = 1;
+    this.currentApplicantTypeId = 1;
+    this.currentRegistrationProcessId = 1;
+    this.currentVerificationDocumentId = 1;
     this.currentApplicationId = 1;
     this.currentDocumentId = 1;
     this.currentEvaluationId = 1;
@@ -189,6 +224,77 @@ export class MemStorage implements IStorage {
     ] as InsertProgram[];
 
     programs.forEach(program => this.createProgram(program));
+
+    // Seed applicant types
+    const applicantTypes = [
+      {
+        name: "ORGANIZATION",
+        description: "Neprofitne organizacije i udruženja građana",
+        requiredDocuments: [
+          "Registracijski dokument",
+          "Finansijski izvještaj",
+          "Statut organizacije",
+          "Potvrda o poreznoj registraciji"
+        ],
+        registrationSteps: [
+          "Osnovna registracija",
+          "Verifikacija dokumenata",
+          "Pregled i potvrda"
+        ],
+        verificationRequirements: [
+          "Validna registracija u instituciji",
+          "Aktivni status organizacije",
+          "Usklađenost sa statutom"
+        ]
+      },
+      {
+        name: "INDIVIDUAL",
+        description: "Pojedinci i građani",
+        requiredDocuments: [
+          "Identifikacijski dokument",
+          "Potvrda adrese stanovanja",
+          "Bankovna potvrda"
+        ],
+        registrationSteps: [
+          "Osnovna registracija",
+          "Verifikacija identiteta",
+          "Pregled i potvrda"
+        ],
+        verificationRequirements: [
+          "Validna lična karta/pasoš",
+          "Adresa stanovanja ne starija od 6 mjeseci"
+        ]
+      },
+      {
+        name: "CORPORATION",
+        description: "Profitne kompanije i preduzeća",
+        requiredDocuments: [
+          "Izvod iz sudskog registra",
+          "Potvrda o poreznoj registraciji",
+          "Godišnji finansijski izvještaj",
+          "Bilans stanja",
+          "Potvrda o izmirenim obavezama"
+        ],
+        registrationSteps: [
+          "Osnovna registracija",
+          "Verifikacija dokumenata",
+          "Finansijska verifikacija",
+          "Pregled i potvrda"
+        ],
+        verificationRequirements: [
+          "Aktivni status u registru",
+          "Izmirene porezne obaveze",
+          "Pozitivno poslovanje u zadnjoj godini"
+        ]
+      }
+    ] as InsertApplicantType[];
+
+    applicantTypes.forEach(type => this.createApplicantType(type));
+
+    // Update programs with eligible applicant types
+    this.updateProgram(1, { eligibleApplicantTypes: ["ORGANIZATION", "CORPORATION"] });
+    this.updateProgram(2, { eligibleApplicantTypes: ["ORGANIZATION"] });
+    this.updateProgram(3, { eligibleApplicantTypes: ["ORGANIZATION", "INDIVIDUAL"] });
 
     // Seed budget tracking
     this.createBudgetTracking({
@@ -408,6 +514,113 @@ export class MemStorage implements IStorage {
     const updatedProgram = { ...program, ...programUpdate };
     this.programs.set(id, updatedProgram);
     return updatedProgram;
+  }
+  
+  // Applicant Type methods
+  async getApplicantType(id: number): Promise<ApplicantType | undefined> {
+    return this.applicantTypes.get(id);
+  }
+
+  async getApplicantTypes(): Promise<ApplicantType[]> {
+    return Array.from(this.applicantTypes.values());
+  }
+
+  async createApplicantType(insertApplicantType: InsertApplicantType): Promise<ApplicantType> {
+    const id = this.currentApplicantTypeId++;
+    const applicantType: ApplicantType = { ...insertApplicantType, id };
+    this.applicantTypes.set(id, applicantType);
+    return applicantType;
+  }
+
+  async updateApplicantType(id: number, applicantTypeUpdate: Partial<ApplicantType>): Promise<ApplicantType | undefined> {
+    const applicantType = this.applicantTypes.get(id);
+    if (!applicantType) return undefined;
+    
+    const updatedApplicantType = { ...applicantType, ...applicantTypeUpdate };
+    this.applicantTypes.set(id, updatedApplicantType);
+    return updatedApplicantType;
+  }
+  
+  // Registration Process methods
+  async getRegistrationProcess(id: number): Promise<RegistrationProcess | undefined> {
+    return this.registrationProcesses.get(id);
+  }
+
+  async getRegistrationProcessByUser(userId: number): Promise<RegistrationProcess | undefined> {
+    return Array.from(this.registrationProcesses.values()).find(
+      (process) => process.userId === userId
+    );
+  }
+
+  async getRegistrationProcesses(): Promise<RegistrationProcess[]> {
+    return Array.from(this.registrationProcesses.values());
+  }
+
+  async createRegistrationProcess(insertRegistrationProcess: InsertRegistrationProcess): Promise<RegistrationProcess> {
+    const id = this.currentRegistrationProcessId++;
+    const registrationProcess: RegistrationProcess = { 
+      ...insertRegistrationProcess, 
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.registrationProcesses.set(id, registrationProcess);
+    return registrationProcess;
+  }
+
+  async updateRegistrationProcess(id: number, registrationProcessUpdate: Partial<RegistrationProcess>): Promise<RegistrationProcess | undefined> {
+    const registrationProcess = this.registrationProcesses.get(id);
+    if (!registrationProcess) return undefined;
+    
+    const updatedRegistrationProcess = { 
+      ...registrationProcess, 
+      ...registrationProcessUpdate,
+      updatedAt: new Date(),
+    };
+    this.registrationProcesses.set(id, updatedRegistrationProcess);
+    return updatedRegistrationProcess;
+  }
+  
+  // Verification Document methods
+  async getVerificationDocument(id: number): Promise<VerificationDocument | undefined> {
+    return this.verificationDocuments.get(id);
+  }
+
+  async getVerificationDocumentsByUser(userId: number): Promise<VerificationDocument[]> {
+    return Array.from(this.verificationDocuments.values()).filter(
+      (doc) => doc.userId === userId
+    );
+  }
+
+  async getVerificationDocumentsByRegistrationProcess(registrationProcessId: number): Promise<VerificationDocument[]> {
+    return Array.from(this.verificationDocuments.values()).filter(
+      (doc) => doc.registrationProcessId === registrationProcessId
+    );
+  }
+
+  async createVerificationDocument(insertVerificationDocument: InsertVerificationDocument): Promise<VerificationDocument> {
+    const id = this.currentVerificationDocumentId++;
+    const verificationDocument: VerificationDocument = { 
+      ...insertVerificationDocument, 
+      id,
+      uploadedAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.verificationDocuments.set(id, verificationDocument);
+    return verificationDocument;
+  }
+
+  async updateVerificationDocument(id: number, verificationDocumentUpdate: Partial<VerificationDocument>): Promise<VerificationDocument | undefined> {
+    const verificationDocument = this.verificationDocuments.get(id);
+    if (!verificationDocument) return undefined;
+    
+    const updatedVerificationDocument = { 
+      ...verificationDocument, 
+      ...verificationDocumentUpdate,
+      updatedAt: new Date(),
+    };
+    this.verificationDocuments.set(id, updatedVerificationDocument);
+    return updatedVerificationDocument;
   }
 
   // Application methods

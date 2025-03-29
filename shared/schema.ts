@@ -164,7 +164,7 @@ export const insertApplicationSchema = createInsertSchema(applications).pick({
   profitLastYear: true,
 });
 
-// Documents model
+// Documents model for applications
 export const documents = pgTable("documents", {
   id: serial("id").primaryKey(),
   applicationId: integer("application_id").notNull().references(() => applications.id),
@@ -181,6 +181,36 @@ export const insertDocumentSchema = createInsertSchema(documents).pick({
   fileType: true,
   filePath: true,
   uploadedBy: true,
+});
+
+// Verification documents model for applicant registration
+export const verificationDocuments = pgTable("verification_documents", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  registrationProcessId: integer("registration_process_id").references(() => registrationProcesses.id),
+  documentType: text("document_type").notNull(), // e.g., "business_registration", "id_card", "tax_certificate"
+  fileName: text("file_name").notNull(),
+  fileType: text("file_type").notNull(),
+  filePath: text("file_path").notNull(),
+  uploadedAt: timestamp("uploaded_at").defaultNow(),
+  verificationStatus: text("verification_status", {
+    enum: ["pending", "approved", "rejected", "requires_resubmission"]
+  }).notNull().default("pending"),
+  verifiedAt: timestamp("verified_at"),
+  verifiedBy: integer("verified_by").references(() => users.id), // Admin who verified
+  rejectionReason: text("rejection_reason"),
+  aiVerified: boolean("ai_verified").default(false),
+  aiVerificationResult: text("ai_verification_result"),
+  aiVerificationScore: integer("ai_verification_score"), // 0-100 score from AI verification
+});
+
+export const insertVerificationDocumentSchema = createInsertSchema(verificationDocuments).pick({
+  userId: true,
+  registrationProcessId: true,
+  documentType: true,
+  fileName: true,
+  fileType: true,
+  filePath: true,
 });
 
 // Evaluations model
@@ -257,6 +287,9 @@ export type InsertApplication = z.infer<typeof insertApplicationSchema>;
 
 export type Document = typeof documents.$inferSelect;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
+
+export type VerificationDocument = typeof verificationDocuments.$inferSelect;
+export type InsertVerificationDocument = z.infer<typeof insertVerificationDocumentSchema>;
 
 export type Evaluation = typeof evaluations.$inferSelect;
 export type InsertEvaluation = z.infer<typeof insertEvaluationSchema>;
