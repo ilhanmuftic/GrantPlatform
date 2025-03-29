@@ -94,8 +94,9 @@ export default function MessagesPage() {
   };
 
   // Get application by ID
-  const getApplicationById = (appId: number | null) => { // Added null check
-    return applications?.find(a => a.id === appId);
+  const getApplicationById = (appId: number | null) => {
+    if (!appId || !applications) return null;
+    return applications.find(a => a.id === appId);
   };
 
   // Get user initials
@@ -408,10 +409,12 @@ export default function MessagesPage() {
                   <div className="flex justify-between items-center">
                     <div>
                       <CardTitle className="text-lg font-semibold text-neutral-900">
-                        {getApplicationById(activeConversation)?.summary || 'Conversation'}
+                        {getApplicationById(activeConversation)?.summary || 'New Conversation'}
                       </CardTitle>
                       <p className="text-sm text-neutral-500">
-                        Application ID: {getApplicationById(activeConversation)?.autoCode}
+                        {getApplicationById(activeConversation)?.autoCode ? 
+                          `Application ID: ${getApplicationById(activeConversation)?.autoCode}` : 
+                          'Select an application'}
                       </p>
                     </div>
                     <Select
