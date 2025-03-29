@@ -190,7 +190,18 @@ export default function EvaluationsPage() {
 
   // AI Evaluation Request
   async function requestAIEvaluation() {
-    if (!selectedApplication) return;
+    // Double check that we have a selected application with a valid ID
+    if (!selectedApplication || !selectedApplication.id) {
+      console.error("No application selected or invalid application ID");
+      toast({
+        title: "AI Analysis Failed",
+        description: "No application selected. Please select an application first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    console.log("Requesting AI evaluation for application ID:", selectedApplication.id);
     
     setIsLoadingAI(true);
     try {
@@ -199,6 +210,12 @@ export default function EvaluationsPage() {
         `/api/applications/${selectedApplication.id}/ai-evaluation`
       );
       const aiResult = await res.json();
+      
+      if (!aiResult) {
+        throw new Error("No AI analysis result received");
+      }
+      
+      console.log("AI analysis result:", aiResult);
       setAiAnalysis(aiResult);
       
       // Pre-fill form with AI suggestions
@@ -244,8 +261,13 @@ export default function EvaluationsPage() {
   // Open evaluation form for a specific application
   function startEvaluation(application: ApplicationWithDetails) {
     setSelectedApplication(application);
+    // Ensure application ID is set in the form
     form.setValue("applicationId", application.id);
+    // Reset any previous AI analysis
+    setAiAnalysis(null);
     setOpenEvaluationDialog(true);
+    
+    console.log("Starting evaluation for application:", application.id);
   }
 
   // Enhance applications with program and applicant data
