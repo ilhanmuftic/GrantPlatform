@@ -19,7 +19,7 @@ import { Send, Search } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
-import Link from 'next/link'; // Import Link component
+import { Link } from 'wouter'; // Import Link component
 
 
 export default function MessagesPage() {
