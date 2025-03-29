@@ -251,9 +251,9 @@ export default function MessagesPage() {
                     <SelectValue placeholder="New message" />
                   </SelectTrigger>
                   <SelectContent>
-                    {getAvailableApplications().map(app => (
+                    {getAvailableApplications().filter(app => app && app.id).map(app => (
                       <SelectItem key={app.id} value={app.id.toString()}>
-                        {app.summary}
+                        {app.summary || `Application ${app.id}`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -415,7 +415,7 @@ export default function MessagesPage() {
                   <div className="flex justify-between items-center">
                     <div className="flex items-center space-x-2">
                       <CardTitle className="text-lg font-semibold text-neutral-900">
-                        {getApplicationById(activeConversation)?.summary || 'Conversation'}
+                        {getApplicationById(activeConversation)?.summary || `Application ${activeConversation}` || 'Conversation'}
                       </CardTitle>
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                         {getApplicationById(activeConversation)?.status || 'Unknown'}
@@ -484,9 +484,9 @@ export default function MessagesPage() {
                         <SelectValue placeholder="Select recipient" />
                       </SelectTrigger>
                       <SelectContent>
-                        {getPotentialReceivers().map(receiver => (
+                        {getPotentialReceivers().filter(receiver => receiver && receiver.id).map(receiver => (
                           <SelectItem key={receiver.id} value={receiver.id.toString()}>
-                            {receiver.fullName}
+                            {receiver.fullName || `User ${receiver.id}`}
                           </SelectItem>
                         ))}
                       </SelectContent>
