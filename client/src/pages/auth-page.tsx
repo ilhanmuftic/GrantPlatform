@@ -53,7 +53,8 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export default function AuthPage() {
   const [, navigate] = useLocation();
   const { user, loginMutation, registerMutation } = useAuth();
-  const [selectedRole, setSelectedRole] = useState("applicant");
+  // Always using applicant role
+  const selectedRole = "applicant";
   
   // Fetch applicant types for the dropdown
   const { data: applicantTypes, isLoading: isLoadingApplicantTypes } = useQuery<ApplicantType[]>({
@@ -88,18 +89,7 @@ export default function AuthPage() {
     },
   });
 
-  // Update the form when role changes
-  useEffect(() => {
-    const currentRole = registerForm.getValues("role");
-    if (currentRole !== selectedRole) {
-      setSelectedRole(currentRole);
-      
-      // Reset applicantTypeId when switching roles
-      if (currentRole !== "applicant") {
-        registerForm.setValue("applicantTypeId", undefined);
-      }
-    }
-  }, [registerForm, selectedRole]);
+  // No need to update form when role changes - we always use "applicant"
 
   function onLoginSubmit(values: LoginFormValues) {
     loginMutation.mutate(values);
@@ -232,57 +222,35 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
+                    {/* Fixed role as applicant */}
+                    <input type="hidden" {...registerForm.register("role")} value="applicant" />
+                    
+                    {/* Always show applicant type dropdown */}
                     <FormField
                       control={registerForm.control}
-                      name="role"
+                      name="applicantTypeId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Role</FormLabel>
+                          <FormLabel>Applicant Type</FormLabel>
                           <select
                             className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                            {...field}
-                            onChange={(e) => {
-                              field.onChange(e);
-                              setSelectedRole(e.target.value);
-                            }}
+                            disabled={isLoadingApplicantTypes}
+                            value={field.value?.toString() || ""}
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
                           >
-                            <option value="applicant">Applicant</option>
-                            <option value="donor">Donor</option>
-                            <option value="reviewer">Reviewer</option>
-                            <option value="administrator">Administrator</option>
+                            <option value="" disabled>
+                              {isLoadingApplicantTypes ? "Loading applicant types..." : "Select applicant type"}
+                            </option>
+                            {applicantTypes?.map((type) => (
+                              <option key={type.id} value={type.id}>
+                                {type.name} - {type.description}
+                              </option>
+                            ))}
                           </select>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    
-                    {selectedRole === "applicant" && (
-                      <FormField
-                        control={registerForm.control}
-                        name="applicantTypeId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Applicant Type</FormLabel>
-                            <select
-                              className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                              disabled={isLoadingApplicantTypes}
-                              value={field.value?.toString() || ""}
-                              onChange={(e) => field.onChange(parseInt(e.target.value))}
-                            >
-                              <option value="" disabled>
-                                {isLoadingApplicantTypes ? "Loading applicant types..." : "Select applicant type"}
-                              </option>
-                              {applicantTypes?.map((type) => (
-                                <option key={type.id} value={type.id}>
-                                  {type.name} - {type.description}
-                                </option>
-                              ))}
-                            </select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    )}
                     
                     <FormField
                       control={registerForm.control}
