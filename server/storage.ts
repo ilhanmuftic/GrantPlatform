@@ -306,6 +306,14 @@ export class MemStorage implements IStorage {
       {
         applicationId: 1,
         senderId: 2,
+        receiverId: 1, // admin1
+        content: "Poštovani, želio bih se prijaviti za program donacija za naš lokalni projekat pomoći djeci. Možete li mi dati više informacija?",
+        read: false,
+        createdAt: new Date(Date.now() - 3600000), // 1 hour ago
+      },
+      {
+        applicationId: 1,
+        senderId: 2,
         receiverId: 3,
         content: "I've uploaded the required documentation for the Dječije pozorište project. Could you please review it?",
         read: false,
@@ -314,7 +322,7 @@ export class MemStorage implements IStorage {
       {
         applicationId: 1,
         senderId: 4,
-        receiverId: 3,
+        receiverId: 1, // admin1
         content: "Could you provide the summary of March applications for our sponsorship program?",
         read: false,
         createdAt: new Date(Date.now() - 86400000), // 1 day ago
