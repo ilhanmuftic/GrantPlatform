@@ -23,6 +23,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch users" });
     }
   });
+  
+  app.patch("/api/users/:id/role", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    // Only administrators can change user roles
+    if (req.user.role !== 'administrator') {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    
+    try {
+      const id = parseInt(req.params.id);
+      const { role } = req.body;
+      
+      if (!role || !['administrator', 'applicant', 'reviewer', 'referent', 'donator'].includes(role)) {
+        return res.status(400).json({ message: "Invalid role" });
+      }
+      
+      const user = await storage.getUser(id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const updatedUser = await storage.updateUser(id, { role });
+      
+      // Remove password from the response
+      if (updatedUser) {
+        const { password, ...userWithoutPassword } = updatedUser;
+        res.json(userWithoutPassword);
+      } else {
+        res.status(500).json({ message: "Failed to update user role" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update user role" });
+    }
+  });
 
   // Programs routes
   app.get("/api/programs", async (req, res) => {
