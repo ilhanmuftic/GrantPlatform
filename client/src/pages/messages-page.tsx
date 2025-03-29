@@ -99,14 +99,15 @@ export default function MessagesPage() {
     const app = applications.find(a => a.id === appId);
     
     // If we found the application but it's missing summary, add one
-    if (app && !app.summary) {
+    if (app) {
       return {
         ...app,
-        summary: `Application ${app.autoCode || app.id}`,
+        summary: app.summary || `Application ${app.autoCode || app.id}`,
       };
     }
     
-    return app;
+    // Fallback for application not found
+    return null;
   };
 
   // Get user initials
@@ -428,7 +429,7 @@ export default function MessagesPage() {
                         {getApplicationById(activeConversation)?.summary || `Application ${activeConversation}` || 'Conversation'}
                       </CardTitle>
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {getApplicationById(activeConversation)?.status || 'Unknown'}
+                        {getApplicationById(activeConversation)?.status || (activeConversation ? 'In Progress' : 'Unknown')}
                       </span>
                     </div>
                   </div>
