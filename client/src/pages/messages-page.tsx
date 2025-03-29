@@ -111,20 +111,22 @@ export default function MessagesPage() {
   };
 
   // Get user initials
-  const getUserInitials = (fullName: string) => {
+  const getUserInitials = (fullName: string | undefined) => {
+    if (!fullName) return "U";
+    
     return fullName
       .split(" ")
       .map(name => name[0])
       .join("")
-      .toUpperCase();
+      .toUpperCase() || "U";
   };
 
   // Helper function to safely format dates
   const formatDate = (dateString: string | Date | undefined | null) => {
-    if (!dateString) return 'Unknown date';
+    if (!dateString) return 'Just now';
     
     const date = new Date(dateString);
-    if (isNaN(date.getTime())) return 'Unknown date';
+    if (isNaN(date.getTime())) return 'Just now';
     
     return formatDistanceToNow(date, { addSuffix: true });
   };
@@ -318,7 +320,7 @@ export default function MessagesPage() {
                               <div className="flex-shrink-0">
                                 <div className="h-10 w-10 rounded-full bg-neutral-200 flex items-center justify-center">
                                   <span className="text-sm font-medium text-neutral-700">
-                                    {sender ? getUserInitials(sender.fullName) : '??'}
+                                    {getUserInitials(sender?.fullName)}
                                   </span>
                                 </div>
                               </div>
@@ -376,7 +378,7 @@ export default function MessagesPage() {
                               <div className="flex-shrink-0">
                                 <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center">
                                   <span className="text-sm font-medium text-white">
-                                    {user ? getUserInitials(user.fullName) : '??'}
+                                    {getUserInitials(user?.fullName)}
                                   </span>
                                 </div>
                               </div>
@@ -462,7 +464,7 @@ export default function MessagesPage() {
                                 <div className="flex-shrink-0">
                                   <div className="h-8 w-8 rounded-full bg-neutral-200 flex items-center justify-center">
                                     <span className="text-xs font-medium text-neutral-700">
-                                      {sender ? getUserInitials(sender.fullName) : '??'}
+                                      {getUserInitials(sender?.fullName)}
                                     </span>
                                   </div>
                                 </div>
