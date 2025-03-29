@@ -272,11 +272,15 @@ export default function EvaluationsPage() {
 
   // Enhance applications with program and applicant data
   const enhancedApplications = applications?.map(application => {
+    // Ensure application has an ID
+    let appId = application.id || 1;
+    
     const program = programs?.find(p => p.id === application.programId);
     const applicant = users?.find(u => u.id === application.applicantId);
     
     return {
       ...application,
+      id: appId,
       program,
       applicant,
     };
