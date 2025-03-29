@@ -11,6 +11,27 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   role: text("role", { enum: ["administrator", "applicant", "reviewer", "donor"] }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+  
+  // Added fields for user profile and verification
+  applicantTypeId: integer("applicant_type_id").references(() => applicantTypes.id),
+  isVerified: boolean("is_verified").default(false),
+  profileComplete: boolean("profile_complete").default(false),
+  
+  // Contact information
+  phoneNumber: text("phone_number"),
+  address: text("address"),
+  city: text("city"),
+  country: text("country"),
+  postalCode: text("postal_code"),
+  
+  // For organizations and corporations
+  organizationName: text("organization_name"),
+  organizationPosition: text("organization_position"),
+  website: text("website"),
+  
+  // For proper display
+  avatarUrl: text("avatar_url"),
+  bio: text("bio"),
 });
 
 export const insertUserSchema = createInsertSchema(users)
@@ -20,6 +41,15 @@ export const insertUserSchema = createInsertSchema(users)
     email: true,
     password: true,
     role: true,
+    applicantTypeId: true,
+    phoneNumber: true,
+    address: true,
+    city: true,
+    country: true,
+    postalCode: true,
+    organizationName: true,
+    organizationPosition: true,
+    website: true,
   })
   .extend({
     password: z.string().min(6, "Password must be at least 6 characters"),
@@ -35,6 +65,8 @@ export const programs = pgTable("programs", {
   year: integer("year").notNull(),
   description: text("description"),
   active: boolean("active").default(true),
+  // Which applicant types can apply for this program
+  eligibleApplicantTypes: text("eligible_applicant_types").array(),
 });
 
 export const insertProgramSchema = createInsertSchema(programs).pick({
@@ -44,6 +76,48 @@ export const insertProgramSchema = createInsertSchema(programs).pick({
   year: true,
   description: true,
   active: true,
+  eligibleApplicantTypes: true,
+});
+
+// Applicant Types
+export const applicantTypes = pgTable("applicant_types", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),  // "organization", "individual", "corporation"
+  description: text("description"),
+  requiredDocuments: text("required_documents").array(),  // Array of required document types
+  registrationSteps: text("registration_steps").array(), // Array of registration steps to complete
+  verificationRequirements: text("verification_requirements").array(), // Array of verification requirements
+});
+
+export const insertApplicantTypeSchema = createInsertSchema(applicantTypes).pick({
+  name: true,
+  description: true,
+  requiredDocuments: true,
+  registrationSteps: true,
+  verificationRequirements: true,
+});
+
+// Registration Process
+export const registrationProcesses = pgTable("registration_processes", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  applicantTypeId: integer("applicant_type_id").notNull().references(() => applicantTypes.id),
+  status: text("status", { 
+    enum: ["incomplete", "pending_verification", "verified", "rejected"] 
+  }).notNull().default("incomplete"),
+  currentStep: integer("current_step").default(1),
+  totalSteps: integer("total_steps").notNull(),
+  completedSteps: text("completed_steps").array(), // Array of completed step names
+  verificationDate: timestamp("verification_date"),
+  rejectionReason: text("rejection_reason"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertRegistrationProcessSchema = createInsertSchema(registrationProcesses).pick({
+  userId: true,
+  applicantTypeId: true,
+  totalSteps: true,
 });
 
 // Applications model
@@ -51,6 +125,7 @@ export const applications = pgTable("applications", {
   id: serial("id").primaryKey(),
   applicantId: integer("applicant_id").notNull().references(() => users.id),
   programId: integer("program_id").notNull().references(() => programs.id),
+  applicantTypeId: integer("applicant_type_id").references(() => applicantTypes.id),
   status: text("status", { 
     enum: ["draft", "submitted", "u obradi", "preporučeno", "odbijeno", "odobreno", "completed", "revisit"] 
   }).notNull().default("draft"),
@@ -61,16 +136,32 @@ export const applications = pgTable("applications", {
   projectDuration: integer("project_duration"),
   organization: text("organization"),
   description: text("description"),
+  // New fields for different applicant types
+  legalStructure: text("legal_structure"),  // For organizations/corporations
+  yearEstablished: integer("year_established"),  // For organizations/corporations
+  taxId: text("tax_id"),  // For organizations/corporations
+  registrationNumber: text("registration_number"),  // For organizations/corporations
+  numberOfEmployees: integer("number_of_employees"),  // For organizations/corporations
+  annualBudget: integer("annual_budget"),  // For organizations
+  profitLastYear: integer("profit_last_year"),  // For corporations
 });
 
 export const insertApplicationSchema = createInsertSchema(applications).pick({
   applicantId: true,
   programId: true,
+  applicantTypeId: true,
   summary: true,
   requestedAmount: true,
   projectDuration: true,
   organization: true,
   description: true,
+  legalStructure: true,
+  yearEstablished: true,
+  taxId: true,
+  registrationNumber: true,
+  numberOfEmployees: true,
+  annualBudget: true,
+  profitLastYear: true,
 });
 
 // Documents model
@@ -154,6 +245,12 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type Program = typeof programs.$inferSelect;
 export type InsertProgram = z.infer<typeof insertProgramSchema>;
+
+export type ApplicantType = typeof applicantTypes.$inferSelect;
+export type InsertApplicantType = z.infer<typeof insertApplicantTypeSchema>;
+
+export type RegistrationProcess = typeof registrationProcesses.$inferSelect;
+export type InsertRegistrationProcess = z.infer<typeof insertRegistrationProcessSchema>;
 
 export type Application = typeof applications.$inferSelect;
 export type InsertApplication = z.infer<typeof insertApplicationSchema>;
