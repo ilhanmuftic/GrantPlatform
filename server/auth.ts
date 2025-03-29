@@ -6,6 +6,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User } from "@shared/schema";
+import { validateEmailForApplicantType } from "./registration-utils";
 
 declare global {
   namespace Express {
@@ -88,6 +89,27 @@ export function setupAuth(app: Express) {
       const existingEmail = await storage.getUserByEmail(req.body.email);
       if (existingEmail) {
         return res.status(400).json({ message: "Email already exists" });
+      }
+      
+      // Validate email format based on applicant type if role is applicant
+      if (req.body.role === 'applicant' && req.body.applicantTypeId) {
+        // Get the applicant type name
+        const applicantType = await storage.getApplicantType(req.body.applicantTypeId);
+        if (!applicantType) {
+          return res.status(400).json({ message: "Invalid applicant type" });
+        }
+        
+        // Validate email for this applicant type
+        const emailValidation = validateEmailForApplicantType(
+          req.body.email, 
+          applicantType.name
+        );
+        
+        if (!emailValidation.valid) {
+          return res.status(400).json({ 
+            message: emailValidation.message || "Email is not valid for this applicant type"
+          });
+        }
       }
 
       // Create the user with hashed password

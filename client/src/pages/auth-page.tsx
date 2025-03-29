@@ -90,12 +90,15 @@ export default function AuthPage() {
   });
 
   // No need to update form when role changes - we always use "applicant"
+  const applicantTypeId = registerForm.watch("applicantTypeId");
 
   function onLoginSubmit(values: LoginFormValues) {
     loginMutation.mutate(values);
   }
 
   function onRegisterSubmit(values: RegisterFormValues) {
+    // Email validation will be handled on the server side when applicant type is passed
+    // This allows the server to apply business rules for email domains
     registerMutation.mutate(values);
   }
 
@@ -219,6 +222,17 @@ export default function AuthPage() {
                             <Input type="email" placeholder="email@example.com" {...field} />
                           </FormControl>
                           <FormMessage />
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {applicantTypeId === 1 && (
+                              <span>Organizations should use official domain names ending with .org, .ngo, .ba, .net, or .com</span>
+                            )}
+                            {applicantTypeId === 3 && (
+                              <span>Corporations must use business email addresses (non-personal domains)</span>
+                            )}
+                            {applicantTypeId === 2 && (
+                              <span>Individuals can use any valid email address</span>
+                            )}
+                          </div>
                         </FormItem>
                       )}
                     />

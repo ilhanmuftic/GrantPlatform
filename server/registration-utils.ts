@@ -11,7 +11,8 @@ import {
   REQUIRED_DOCUMENTS,
   VERIFICATION_REQUIREMENTS,
   REGISTRATION_STATUS,
-  DOCUMENT_VERIFICATION_STATUS
+  DOCUMENT_VERIFICATION_STATUS,
+  EMAIL_VALIDATION
 } from "../shared/constants";
 
 /**
@@ -180,6 +181,56 @@ export async function validateDocumentWithAI(
     aiVerificationScore: aiVerificationResult.score,
     verificationStatus: aiVerificationResult.score >= 85 ? DOCUMENT_VERIFICATION_STATUS.APPROVED : verificationStatus
   });
+}
+
+/**
+ * Validates if an email is acceptable for the given applicant type
+ * Enforces business rules for email domains based on applicant type
+ */
+export function validateEmailForApplicantType(email: string, applicantType: string): {
+  valid: boolean;
+  message?: string;
+} {
+  if (!email) {
+    return { valid: false, message: "Email is required" };
+  }
+  
+  const domain = email.split('@')[1]?.toLowerCase();
+  if (!domain) {
+    return { valid: false, message: "Invalid email format" };
+  }
+  
+  // Get validation rules for this applicant type
+  const validationRules = EMAIL_VALIDATION[applicantType as keyof typeof EMAIL_VALIDATION];
+  if (!validationRules) {
+    return { valid: true }; // No specific rules
+  }
+  
+  // Individual applicants can use any email
+  if (applicantType === APPLICANT_TYPE.INDIVIDUAL) {
+    return { valid: true };
+  }
+  
+  // Check against disallowed domains (both for org and corp)
+  if (validationRules.disallowed_domains && 
+      validationRules.disallowed_domains.includes(domain)) {
+    return { 
+      valid: false, 
+      message: `${applicantType === APPLICANT_TYPE.ORGANIZATION ? 'Organizations' : 'Corporations'} cannot use personal email domains like gmail.com, yahoo.com, etc.` 
+    };
+  }
+  
+  // Additional checks for organizations - must end with .org, .ngo, etc.
+  if (applicantType === APPLICANT_TYPE.ORGANIZATION && 
+      validationRules.pattern && 
+      !validationRules.pattern.test(domain)) {
+    return { 
+      valid: false, 
+      message: "Organizations should use official domain names ending with .org, .ngo, .ba, .net, or .com" 
+    };
+  }
+  
+  return { valid: true };
 }
 
 /**

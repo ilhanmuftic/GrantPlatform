@@ -1,0 +1,180 @@
+✅ 1. VALIDACIJA IDENTITETA I EMAIL ADRESE PO TIPU APLIKANTA
+
+Tipovi aplikanata:
+
+    Korporacija – mora imati korporativni email (npr. ime@firma.com)
+
+    Udruženje/NVO – takođe korporativni, ali može imati .org, .ngo i slično (npr. kontakt@udruzenje.org)
+
+    Fizička lica – može koristiti bilo koji email (Gmail, Outlook...)
+
+Primjer logike:
+
+import re
+
+def validiraj_email(email, tip_aplikanta):
+    domen = email.split('@')[-1].lower()
+
+    # Fizička lica: dozvoljeno sve
+    if tip_aplikanta == "individual":
+        return True
+
+    # Korporacije: mora imati poslovni domen (ne gmail, yahoo itd.)
+    if tip_aplikanta == "corporation":
+        if domen in ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com"]:
+            return False
+        return True
+
+    # Udruženja: tražimo da domen sadrži .org, .ngo, .ba i sl.
+    if tip_aplikanta == "organization":
+        if re.search(r"\.(org|ngo|ba|net|com)$", domen) and domen not in ["gmail.com", "yahoo.com"]:
+            return True
+        return False
+
+🤖 2. AI VALIDACIJA DOKUMENATA (NPR. REGISTRACIJA FIRME, LIČNA KARTA...)
+
+Koristiš AI da obradi dokumente i validira da sadrže očekivane informacije.
+Šta koristiti:
+
+    OCR biblioteka: Tesseract, EasyOCR, Azure Form Recognizer ili Google Vision API
+
+    AI model (OpenAI GPT ili lokalni model) za klasifikaciju dokumenata i provjeru sadržaja
+
+Koraci:
+
+    Korisnik uploaduje dokument (npr. PDF, slika)
+
+    OCR pretvori dokument u tekst
+
+    AI provjeri:
+
+        Ko
+
+You said:
+opisi mi, ne treba mi code
+ChatGPT said:
+
+Naravno! Evo kako možeš organizovati AI kontrolu za onboarding aplikanata kroz dva ključna koraka:
+✅ 1. Validacija email adrese prema tipu aplikanta
+
+Kada aplikant izabere svoj tip (korporacija, udruženje, fizičko lice), sistem automatski primjenjuje pravila:
+
+    Korporacije: moraju koristiti poslovnu email adresu, što znači da email ne smije biti s domena kao što su gmail.com, yahoo.com i slično. Očekuju se domeni poput ime@firma.com, @company.ba, itd.
+
+    Udruženja/NVO: takođe trebaju koristiti organizacijski email, ali je dopušteno da domen završava na .org, .ngo, .ba i sl. Npr. kontakt@udruzenje.org.
+
+    Fizička lica: mogu koristiti bilo koji email, uključujući Gmail, Yahoo, Outlook itd.
+
+Sistem automatski detektuje email i na osnovu toga ocjenjuje da li je validan za odabrani tip.
+🤖 2. AI analiza dostavljenih dokumenata
+
+Ovdje koristiš OCR (optičko prepoznavanje teksta) i jezične AI modele da automatizovano provjere validnost dokumenata.
+Kako to funkcioniše:
+
+    Aplikant učita dokument (PDF, slika, sken).
+
+    AI izvlači tekst iz dokumenta koristeći OCR tehnologiju (npr. Tesseract, Azure OCR ili AWS Textract).
+
+    Jezični model (npr. OpenAI ili lokalni LLM) pregleda sadržaj dokumenta i odgovara na pitanja poput:
+
+        Da li je dokument validan za odabrani tip aplikanata?
+
+        Da li dokument sadrži ime organizacije, broj registracije, datum osnivanja?
+
+        Za fizička lica: da li lična karta ima ime, JMBG, datum važenja?
+
+    Sistem vraća poruku validacije (uspješno ili sa detaljima šta nedostaje).
+
+✅ Na kraju: korisničko iskustvo
+
+    Ako dokumenti nisu ispravni ili email nije validan, aplikant odmah dobija poruku šta da ispravi.
+
+    Sve se dešava automatski, bez potrebe da admin prvo pregleda dokumente.
+
+    Možeš dodati i AI chat podršku koja pomaže aplikantu u realnom vremenu da razumije zahtjeve (npr. "Trebate priložiti dokument koji pokazuje da je firma registrovana").
+
+Ako želiš, mogu ti pomoći i da definišemo koje tačno dokumente tražiš po tipu aplikanta, pa da se i AI evaluacija precizno prilagodi. Želiš li to?
+You said:
+daj mi koje tacno dokumente da trazim
+ChatGPT said:
+
+Odlično — evo precizne liste dokumenata koje možeš tražiti za svaki tip aplikanta, sa objašnjenjem zašto su potrebni (što ti može pomoći i pri AI evaluaciji sadržaja):
+🏢 1. Korporacije (privredna društva)
+
+Obavezni dokumenti:
+
+    Rješenje o registraciji firme (izvod iz sudskog registra)
+
+        Dokazuje pravni status i osnovne podatke o firmi.
+
+    PDV broj ili porezni ID
+
+        Potvrđuje da firma posluje legalno i plaća poreze.
+
+    Izvod iz banke ili dokaz o poslovnom računu
+
+        Potvrđuje aktivan poslovni račun.
+
+    Potpisana izjava zakonskog zastupnika (može biti u PDF-u)
+
+        Izjava o istinitosti podataka i ovlaštenju za apliciranje.
+
+Opcionalno:
+
+    Bilans stanja/uspjeha (ako se traže finansijski podaci)
+
+🏛 2. Udruženja / NVO / Fondacije
+
+Obavezni dokumenti:
+
+    Rješenje o registraciji udruženja/fondacije
+
+        Izdat od nadležnog ministarstva ili suda.
+
+    Statut udruženja
+
+        Pokazuje svrhu organizacije i strukturu upravljanja.
+
+    Odluka Upravnog odbora o apliciranju na poziv
+
+        Da bi se dokazalo da postoji kolektivna odluka.
+
+    Identifikacioni broj (JIB) / porezni broj
+
+        Ako udruženje ima poslovne aktivnosti.
+
+    Izjava ovlaštene osobe (predsjednik/sekretar)
+
+Opcionalno:
+
+    Finansijski izvještaji (ako tražiš uvid u rad)
+
+👤 3. Fizička lica (individualni aplikanti)
+
+Obavezni dokumenti:
+
+    Lična karta ili pasoš (obostrano)
+
+        Za identitet i državljanstvo.
+
+    CV / biografija
+
+        Da se vidi iskustvo i stručnost.
+
+    Motivaciono pismo / plan korištenja sredstava
+
+        Objašnjava svrhu donacije i koristi.
+
+    Potpisana izjava o korištenju sredstava u skladu s pravilima
+
+Opcionalno:
+
+    Preporuke / podrška trećih strana (profesori, mentori, organizacije)
+
+🎯 Dodatna AI pravila validacije
+
+    Ako rješenje o registraciji ne sadrži broj, datum i naziv entiteta → nevalidno.
+
+    Ako lična karta nema datum važenja ili ime aplikanta se ne poklapa s prijavom → upozorenje.
+
+    Ako je motivaciono pismo kraće od npr. 300 riječi → AI može sugerisati dopunu.
