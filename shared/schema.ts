@@ -52,7 +52,7 @@ export const applications = pgTable("applications", {
   applicantId: integer("applicant_id").notNull().references(() => users.id),
   programId: integer("program_id").notNull().references(() => programs.id),
   status: text("status", { 
-    enum: ["draft", "submitted", "u obradi", "preporučeno", "odbijeno", "odobreno", "completed"] 
+    enum: ["draft", "submitted", "u obradi", "preporučeno", "odbijeno", "odobreno", "completed", "revisit"] 
   }).notNull().default("draft"),
   submittedAt: timestamp("submitted_at"),
   autoCode: text("auto_code").notNull(),

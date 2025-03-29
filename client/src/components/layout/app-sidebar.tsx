@@ -33,6 +33,12 @@ export default function AppSidebar() {
       roles: ["administrator", "applicant", "reviewer", "donor"],
     },
     {
+      name: "Evaluations",
+      path: "/evaluations",
+      icon: "rate_review",
+      roles: ["reviewer"],
+    },
+    {
       name: "Messages",
       path: "/messages",
       icon: "mail",

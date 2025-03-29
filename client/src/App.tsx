@@ -13,6 +13,7 @@ import BudgetPage from "@/pages/budget-page";
 import DocumentsPage from "@/pages/documents-page";
 import ReportsPage from "@/pages/reports-page";
 import AdminPage from "@/pages/admin-page";
+import EvaluationsPage from "@/pages/evaluations-page";
 
 function Router() {
   return (
@@ -20,6 +21,11 @@ function Router() {
       <ProtectedRoute path="/" component={Dashboard} />
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/applications" component={ApplicationsPage} />
+      <ProtectedRoute 
+        path="/evaluations" 
+        component={EvaluationsPage} 
+        allowedRoles={["reviewer"]}
+      />
       <ProtectedRoute path="/messages" component={MessagesPage} />
       <ProtectedRoute 
         path="/budget" 

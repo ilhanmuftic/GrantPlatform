@@ -222,6 +222,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Evaluations routes
+  app.get("/api/evaluations", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    // Only reviewers and admins can view all evaluations
+    if (!['administrator', 'reviewer'].includes(req.user.role)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    try {
+      const applications = await storage.getApplications();
+      let allEvaluations = [];
+      
+      for (const application of applications) {
+        const evaluations = await storage.getEvaluationsByApplication(application.id);
+        allEvaluations = [...allEvaluations, ...evaluations];
+      }
+      
+      res.json(allEvaluations);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch evaluations" });
+    }
+  });
+
   app.get("/api/applications/:id/evaluations", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
