@@ -8,8 +8,116 @@ import {
   insertApplicationSchema, 
   insertMessageSchema, 
   insertDocumentSchema, 
-  insertEvaluationSchema 
+  insertEvaluationSchema,
+  Application,
+  Program,
+  User
 } from "@shared/schema";
+
+// AI evaluation function
+interface AIEvaluationResult {
+  score: number;
+  decision: "preporučeno" | "odbijeno" | "revisit";
+  comment: string;
+  insights: {
+    strengths: string[];
+    weaknesses: string[];
+    recommendation: string;
+  };
+}
+
+function generateAIEvaluation(
+  application: Application, 
+  program: Program, 
+  applicant: User
+): AIEvaluationResult {
+  // This would be replaced with a real AI service in production
+  // For now, we'll create a sample analysis based on application data
+  
+  // Calculate a score based on various factors
+  let score = 75; // Default score
+  let strengths = [];
+  let weaknesses = [];
+  
+  // Adjust score based on application data
+  if (application.requestedAmount && program.budgetTotal) {
+    const requestRatio = application.requestedAmount / program.budgetTotal;
+    
+    // If requested amount is less than 10% of budget, consider it reasonable
+    if (requestRatio < 0.1) {
+      score += 10;
+      strengths.push("Reasonable budget request relative to program size");
+    } else if (requestRatio > 0.3) {
+      score -= 15;
+      weaknesses.push("Requested amount is significant portion of total program budget");
+    }
+  }
+  
+  // Analyze application completeness
+  if (application.description && application.description.length > 300) {
+    score += 5;
+    strengths.push("Detailed project description provided");
+  } else {
+    score -= 5;
+    weaknesses.push("Project description could be more comprehensive");
+  }
+  
+  // Analyze organization information
+  if (application.organization) {
+    score += 5;
+    strengths.push("Clear organizational information provided");
+  } else {
+    weaknesses.push("Missing organizational details");
+  }
+  
+  // Check project duration for reasonableness
+  if (application.projectDuration) {
+    if (application.projectDuration > 24) {
+      score -= 5;
+      weaknesses.push("Project timeline may be too long for effective monitoring");
+    } else if (application.projectDuration < 6) {
+      score += 5;
+      strengths.push("Project has focused, achievable timeline");
+    }
+  }
+  
+  // Determine decision based on score
+  let decision: "preporučeno" | "odbijeno" | "revisit";
+  let recommendation = "";
+  
+  if (score >= 80) {
+    decision = "preporučeno";
+    recommendation = "This application shows strong potential for success and alignment with program goals.";
+  } else if (score < 60) {
+    decision = "odbijeno";
+    recommendation = "This application has several areas that need improvement before it can be recommended.";
+  } else {
+    decision = "revisit";
+    recommendation = "This application has potential but requires further discussion and possibly additional information.";
+  }
+  
+  // Generate a comment based on the analysis
+  const comment = `AI Evaluation Analysis:
+Based on my review of the application "${application.summary}" for the program "${program.name}", I have assigned a score of ${score}/100.
+
+Key observations:
+${strengths.map(s => `+ ${s}`).join('\n')}
+${weaknesses.map(w => `- ${w}`).join('\n')}
+
+${recommendation}
+`;
+
+  return {
+    score,
+    decision,
+    comment,
+    insights: {
+      strengths,
+      weaknesses,
+      recommendation
+    }
+  };
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
@@ -331,6 +439,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(allEvaluations);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch evaluations" });
+    }
+  });
+  
+  // AI-assisted evaluation generation
+  app.post("/api/applications/:id/ai-evaluation", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    // Only reviewers and admins can use AI evaluation
+    if (!['administrator', 'reviewer'].includes(req.user.role)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    try {
+      const applicationId = parseInt(req.params.id);
+      const application = await storage.getApplication(applicationId);
+      
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+      
+      // Get program details
+      const program = await storage.getProgram(application.programId);
+      if (!program) {
+        return res.status(404).json({ message: "Program not found" });
+      }
+      
+      // Get applicant details
+      const applicant = await storage.getUser(application.applicantId);
+      if (!applicant) {
+        return res.status(404).json({ message: "Applicant not found" });
+      }
+      
+      // Depending on program type and application data, determine AI analysis
+      const aiAnalysis = generateAIEvaluation(application, program, applicant);
+      
+      res.json(aiAnalysis);
+    } catch (error) {
+      console.error("AI evaluation error:", error);
+      res.status(500).json({ message: "Failed to generate AI evaluation" });
     }
   });
 

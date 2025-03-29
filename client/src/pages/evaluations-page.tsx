@@ -5,6 +5,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import MainLayout from "@/components/layout/main-layout";
 import { 
+  Loader2, 
+  Sparkles, 
+  Check, 
+  Lightbulb, 
+  Plus, 
+  Minus 
+} from "lucide-react";
+import { 
   Card, 
   CardContent, 
   CardDescription, 
@@ -47,7 +55,6 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { insertEvaluationSchema } from "@shared/schema";
 import { Evaluation, Application, Program, User } from "@shared/schema";
-import { Loader2 } from "lucide-react";
 
 // Define the evaluation form schema
 const evaluationFormSchema = z.object({
@@ -134,6 +141,19 @@ export default function EvaluationsPage() {
     },
   });
 
+  // State for AI analysis
+  const [aiAnalysis, setAiAnalysis] = useState<{
+    score: number;
+    decision: "preporučeno" | "odbijeno" | "revisit";
+    comment: string;
+    insights: {
+      strengths: string[];
+      weaknesses: string[];
+      recommendation: string;
+    };
+  } | null>(null);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+
   // Mutation for creating a new evaluation
   const createEvaluationMutation = useMutation({
     mutationFn: async (values: EvaluationFormValues) => {
@@ -153,6 +173,7 @@ export default function EvaluationsPage() {
       // Reset form and close dialog
       form.reset();
       setOpenEvaluationDialog(false);
+      setAiAnalysis(null);
       
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ["/api/evaluations"] });
@@ -166,6 +187,54 @@ export default function EvaluationsPage() {
       });
     },
   });
+
+  // AI Evaluation Request
+  async function requestAIEvaluation() {
+    if (!selectedApplication) return;
+    
+    setIsLoadingAI(true);
+    try {
+      const res = await apiRequest(
+        "POST",
+        `/api/applications/${selectedApplication.id}/ai-evaluation`
+      );
+      const aiResult = await res.json();
+      setAiAnalysis(aiResult);
+      
+      // Pre-fill form with AI suggestions
+      form.setValue("score", aiResult.score);
+      form.setValue("decision", aiResult.decision);
+      form.setValue("comment", aiResult.comment);
+      
+      toast({
+        title: "AI Analysis Complete",
+        description: "AI has analyzed the application and suggested an evaluation.",
+      });
+    } catch (error) {
+      console.error("AI analysis error:", error);
+      toast({
+        title: "AI Analysis Failed",
+        description: "Unable to generate AI evaluation. Please try again or proceed manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingAI(false);
+    }
+  }
+  
+  // Use AI suggestions
+  function useAISuggestions() {
+    if (!aiAnalysis) return;
+    
+    form.setValue("score", aiAnalysis.score);
+    form.setValue("decision", aiAnalysis.decision);
+    form.setValue("comment", aiAnalysis.comment);
+    
+    toast({
+      title: "AI Suggestions Applied",
+      description: "You can still edit these values before submitting.",
+    });
+  }
 
   // Handle evaluation form submission
   function onSubmit(values: EvaluationFormValues) {
@@ -444,7 +513,7 @@ export default function EvaluationsPage() {
       
       {/* Evaluation Dialog */}
       <Dialog open={openEvaluationDialog} onOpenChange={setOpenEvaluationDialog}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Evaluate Application</DialogTitle>
             <DialogDescription>
@@ -455,6 +524,90 @@ export default function EvaluationsPage() {
               )}
             </DialogDescription>
           </DialogHeader>
+          
+          {/* AI Controls */}
+          <div className="flex flex-col sm:flex-row justify-between gap-2 mb-4 pb-4 border-b">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-yellow-500" />
+              <span className="text-sm font-medium">AI-Assisted Evaluation</span>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                disabled={isLoadingAI || !aiAnalysis}
+                onClick={useAISuggestions}
+              >
+                <Check className="h-4 w-4 mr-1" />
+                Use AI Suggestions
+              </Button>
+              <Button 
+                variant="default" 
+                size="sm"
+                disabled={isLoadingAI}
+                onClick={requestAIEvaluation}
+              >
+                {isLoadingAI ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-1" />
+                    {aiAnalysis ? "Regenerate Analysis" : "Generate AI Analysis"}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+          
+          {/* AI Insights Panel */}
+          {aiAnalysis && (
+            <div className="mb-6 space-y-3">
+              <div className="rounded-lg bg-secondary p-4 text-sm">
+                <h4 className="font-medium mb-2 flex items-center gap-1">
+                  <Lightbulb className="h-4 w-4" />
+                  AI Insights
+                </h4>
+                
+                <div className="grid gap-3 mt-2">
+                  {aiAnalysis.insights.strengths.length > 0 && (
+                    <div>
+                      <h5 className="text-xs uppercase text-muted-foreground mb-1">Strengths</h5>
+                      <ul className="space-y-1 text-sm">
+                        {aiAnalysis.insights.strengths.map((strength, idx) => (
+                          <li key={idx} className="flex items-start gap-1">
+                            <Plus className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />
+                            <span>{strength}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {aiAnalysis.insights.weaknesses.length > 0 && (
+                    <div>
+                      <h5 className="text-xs uppercase text-muted-foreground mb-1">Areas for Improvement</h5>
+                      <ul className="space-y-1 text-sm">
+                        {aiAnalysis.insights.weaknesses.map((weakness, idx) => (
+                          <li key={idx} className="flex items-start gap-1">
+                            <Minus className="h-3.5 w-3.5 text-red-500 mt-0.5 flex-shrink-0" />
+                            <span>{weakness}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <h5 className="text-xs uppercase text-muted-foreground mb-1">Recommendation</h5>
+                    <p className="text-sm">{aiAnalysis.insights.recommendation}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
