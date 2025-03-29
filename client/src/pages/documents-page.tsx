@@ -45,14 +45,53 @@ export default function DocumentsPage() {
 
   const isLoading = documentsLoading || applicationsLoading || usersLoading;
 
-  // Get application by ID
-  const getApplicationById = (id: number) => {
-    return applications?.find(app => app.id === id);
+  // Get application by ID with safer fallbacks
+  const getApplicationById = (id: number | undefined) => {
+    if (!id || !applications) return null;
+    
+    try {
+      const app = applications.find(app => app && app.id === id);
+      
+      if (!app) return null;
+      
+      // Create a sanitized application object with fallbacks for all properties
+      return {
+        ...app,
+        id: app.id,
+        applicantId: app.applicantId,
+        programId: app.programId,
+        status: app.status || 'unknown',
+        summary: app.summary || `Application ${app.autoCode || app.id}`,
+        autoCode: app.autoCode || `APP-${app.id}`,
+      };
+    } catch (error) {
+      console.error("Error getting application by ID:", error);
+      return null;
+    }
   };
 
-  // Get user by ID
-  const getUserById = (id: number) => {
-    return users?.find(user => user.id === id);
+  // Get user by ID with safer fallbacks
+  const getUserById = (id: number | undefined) => {
+    if (!id || !users) return null;
+    
+    try {
+      const user = users.find(user => user && user.id === id);
+      
+      if (!user) return null;
+      
+      // Create a sanitized user object with fallbacks for missing properties
+      return {
+        ...user,
+        id: user.id,
+        username: user.username || `user-${user.id}`,
+        fullName: user.fullName || user.username || `User ${user.id}`,
+        email: user.email || '',
+        role: user.role || 'user',
+      };
+    } catch (error) {
+      console.error("Error getting user by ID:", error);
+      return null;
+    }
   };
 
   // Handle file upload
@@ -307,11 +346,16 @@ export default function DocumentsPage() {
                     <SelectValue placeholder="Select an application" />
                   </SelectTrigger>
                   <SelectContent>
-                    {applications?.map(app => (
-                      <SelectItem key={app.id} value={app.id.toString()}>
-                        {app.summary} ({app.autoCode})
-                      </SelectItem>
-                    ))}
+                    {!applications || applications.length === 0 ? (
+                      <SelectItem value="" disabled>No applications available</SelectItem>
+                    ) : (
+                      applications.map(app => app && (
+                        <SelectItem key={app.id} value={String(app.id)}>
+                          {(app.summary || `Application ${app.autoCode || app.id}`)}
+                          {app.autoCode && ` (${app.autoCode})`}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
