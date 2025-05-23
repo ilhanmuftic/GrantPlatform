@@ -1,4 +1,5 @@
 📌 Sponsorship Management Platform
+
 This is a grant management platform developed to support and empower tech and innovation initiatives across Bosnia and Herzegovina.
 
 Our solution provides a centralized, user-friendly system where organizations and individuals can:
